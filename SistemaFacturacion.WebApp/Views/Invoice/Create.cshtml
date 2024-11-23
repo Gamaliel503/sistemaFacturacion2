@@ -1,0 +1,142 @@
+﻿
+@model Invoice
+
+<h2>Create Invoice</h2>
+
+
+<form  id="invoiceForm">
+    <div class ="form-group">
+        <label>Customer</label>
+            <select asp-for="CustomerId" class="form-control" id="customerId">
+                <option value="">-- Seleccione --</option>
+                @foreach (var customer in (List<Customer>)ViewBag.Customers)
+                {
+                    <option value="@customer.Id">@customer.Name</option>
+
+                }
+            </select>
+    </div>
+
+    <h3>Products</h3>
+    <table class  = "table" id="productsTable">
+        <thead>
+            <tr>
+                <td>Product</td>
+                <td>Quantity</td>
+                <td>Unit Price</td>
+                <td>Total</td>
+                <td>Action</td>
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+
+        </tbody>
+
+    </table>
+
+    <button type="button" class=" btn btn-secondary" id="addProduct">Add Product</button>
+
+    <div class="form-group">
+        <label>Total</label>
+        <input asp-for = "Total" class="form-control" readonly id="grandTotal" />
+
+    </div>
+
+	<button type="submit" class=" btn btn-primary" >Create Invoice</button>
+</form>
+
+@section Scripts {
+	<script>
+		$(document).ready(function () {
+			var product = @Html.Raw(Json.Serialize(ViewBag.Products));
+			$("#addProduct").click(function () {
+				var row = $("<tr>");
+				var productSelect = $("<select>").addClass("form-control productSelect");
+				$.each(product, function (i, item) {
+					productSelect.append($("<option>").val(item.id).text(item.name).data("price", item.price));
+				});
+
+				row.append($("<td>").append(productSelect));
+				row.append($("<td>").append($("<input>").attr("type", "number").addClass("form-control quantity").val(1)));
+				row.append($("<td>").append($("<input>").attr("type", "number").addClass("form-control price").prop("readonly", true)));
+				row.append($("<td>").append($("<input>").attr("type", "number").addClass("form-control total").prop("readonly", true)));
+				row.append($("<td>").append($("<button>").attr("type", "button").addClass("btn btn-danger removeProduct").text("Remove")));
+				$("#productsTable tbody").append(row);
+				updatePrice(productSelect);
+			})
+
+			$(document).on("change", ".productSelect", function () {
+				updatePrice($(this));
+			})
+
+			$(document).on("change", ".quantity", function () {
+				updateTotal($(this).closest("tr"));
+			})
+
+			$(document).on("click", ".removeProduct", function () {
+				$(this).closest("tr").remove();
+				calculateGrandTotal();
+			});
+
+			function updatePrice(select) {
+				var price = select.find(":selected").data("price");
+				var row = select.closest("tr");
+				row.find(".price").val(price);
+				updateTotal(row);
+			}
+
+			function updateTotal(row) {
+				var quantity = row.find(".quantity").val();
+				var price = row.find(".price").val();
+				var total = quantity * price;
+				row.find(".total").val(total.toFixed(2));
+				calculateGrandTotal();
+			}
+
+			function calculateGrandTotal() {
+				var grandTotal = 0;
+				$(".total").each(function () {
+					grandTotal += parseFloat($(this).val()) || 0;
+				});
+				$("#grandTotal").val(grandTotal.toFixed(2));
+			}
+
+			$("#invoiceForm").submit(function (e) {
+				e.preventDefault();
+				var invoice = {
+					customerId: parseInt($("#customerId").val()),
+					total: parseFloat($("#grandTotal").val()),
+					details: []
+				};
+				$("#productsTable tbody tr").each(function () {
+					invoice.details.push({
+						productId: parseInt($(this).find(".productSelect").val()),
+						quantity: parseInt($(this).find(".quantity").val()),
+						unitPrice: parseFloat($(this).find(".price").val())
+					});
+				});
+				$.ajax({
+					url: '@Url.Action("Create")',
+					type: 'POST',
+					contentType: 'application/json',
+					data: JSON.stringify(invoice),
+					success: function (result) {
+						window.location.href = '@Url.Action("Index", "Invoice")';
+					},
+					error: function (xhr, status, error) {
+						console.error("Error:", xhr.responseText);
+						alert("An error occurred while creating the invoice. Please try again.");
+					}
+				});
+			});
+
+
+			
+
+		})
+		
+	</script>
+}

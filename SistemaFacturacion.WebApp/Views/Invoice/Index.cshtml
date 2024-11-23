@@ -1,0 +1,34 @@
+﻿@model List<InvoiceListItemDTO>
+
+<h2>Invoice List</h2>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Create New</a>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Date</th>
+            <th>Total</th>
+            <th>CustomerName</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var Invoice in Model)
+        {
+            <tr>
+                <td>@Invoice.Id</td>
+                <td>@Invoice.Date</td>
+                <td>@Invoice.Total</td>
+                <td>@Invoice.CustomerName</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@Invoice.Id" class="btn btn-sm btn-warning">Edit</a>
+                    <a asp-action="Delete" asp-route-id="@Invoice.Id" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this product?');">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
